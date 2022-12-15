@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Women, Category
+from .models import Women
 
 
 class WomenSerializer(serializers.ModelSerializer):
@@ -12,7 +12,3 @@ class WomenSerializer(serializers.ModelSerializer):
         model=Women                 #указываем нужную модель
         fields=('title','cat_id')   #поля, которые мы будем использовать для сериализации, т.е. те, которые будут отправляться обратно пользователю
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Category
-        fields=('name',)

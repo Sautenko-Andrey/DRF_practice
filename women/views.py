@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Women, Category
-from .serializers import WomenSerializer
+from .serializers import WomenSerializer, CategorySerializer
 
 
 class WomenAPIView(APIView):
@@ -27,13 +27,24 @@ class WomenAPIView(APIView):
         По данному get-запросу мы будем отправлять список всех записей из БД Women'''
 
         #для начала получим список всех записей Women из БД:
-        lst=Women.objects.all().values()
-        #вернем список всех записей из таблицы Women:
-        return Response({'posts': list(lst)})
+        pages_list=Women.objects.all()
+        #вернем список всех записей из таблицы Women и т.к. здесь будет использоваться список записей,
+        # а не одна какая-то запись,то дополнительно указываем many=True,чтобы он вернул список записей
+        #data - это словарь преобразованных данных из таблицы Women
+        #объект Response уже в свою очередь все преобразовывает в байтовую JSON-строку
+        #здесь выполняется все действия из ф-ии encode, которую мы прописывали в ручную в serializers
+        return Response({'posts': WomenSerializer(pages_list, many=True).data})
 
     def post(self, request):
         '''Метод, отвечающий за post-запросы.
         Т.е. он позволяет нам добавлять новые записи в БД.'''
+
+        #прежде чем добавлять новую запись в БД мы сделаем проверку:
+        #сначала мы создадим сериализатор на основе тех данных, которые поступили с post-запросом:
+        serializer=WomenSerializer(data=request.data)
+
+        #далее с помощью метода is_valid мы проверяем корректность принятых данных:
+        serializer.is_valid(raise_exception=True)
 
         #определим перменную new_post, которая будет ссылаться на новую добавленную запись в табл.Women
         new_post=Women.objects.create(
@@ -44,9 +55,20 @@ class WomenAPIView(APIView):
             cat_id=request.data['cat_id']
         )
         #в качестве ответа клиенту мы будем отправлять обратно значение,данное этой новой добавленной записи,
-        #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - функция model_to_dict()
-        #которая преобразовывает объект класса Women в словарь.Короче возвращаем то, что добавили
-        return Response({'post':model_to_dict(new_post)})
+        #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - сериализатор WomenSerializer,
+        #many указывать не нужно,т.к. один объект берем,а не список
+        return Response({'post':WomenSerializer(new_post).data})
+
+class CategoryAPIView(APIView):
+    def get(self,request):
+        all_categories=Category.objects.all()
+        return Response({'categories':CategorySerializer(all_categories, many=True).data})
+
+    def post(self, request):
+        new_category=Category.objects.create(
+            name=request.data['name']
+        )
+        return Response({'category':CategorySerializer(new_category).data})
 
 # class WomenAPIView(generics.ListAPIView):
 #     '''1) Определим атрибут queryset, который из таблицы Women

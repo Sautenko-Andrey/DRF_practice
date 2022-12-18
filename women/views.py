@@ -45,19 +45,61 @@ class WomenAPIView(APIView):
 
         #далее с помощью метода is_valid мы проверяем корректность принятых данных:
         serializer.is_valid(raise_exception=True)
+        #метод save() автоматически вызовет метод create()в сериализаторе и добавит новую запись в БД
+        serializer.save()
 
-        #определим перменную new_post, которая будет ссылаться на новую добавленную запись в табл.Women
-        new_post=Women.objects.create(
-            #title будет брать из коллекции request data значение title,
-            #т.е. уогда мы будем отправялть post-апрос на сервер, то будем передвать ключ 'title'
-            title=request.data['title'],
-            content=request.data['content'],
-            cat_id=request.data['cat_id']
-        )
         #в качестве ответа клиенту мы будем отправлять обратно значение,данное этой новой добавленной записи,
-        #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - сериализатор WomenSerializer,
-        #many указывать не нужно,т.к. один объект берем,а не список
-        return Response({'post':WomenSerializer(new_post).data})
+        #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - сериализатор WomenSerializer
+        return Response({'post':serializer.data})
+
+    def put(self,request,*args,**kwargs):
+        '''С помощью коллекции kwargs мы можем определить значение pk -
+        идентификатор записи, которую нужно поменять. Как это делается? Мы обращаемся
+        к словарю kwargs, берем у него ключ pk(если он там присутствует), а если не
+        присутствует, то мы возвртим значение None.
+        Далее сделаем проверку, что если этот ключ pk не присутствует в этой коллекции kwargs
+        (т.е. этот ключ не указан в url-запросе), то мы возвратим ответ клиенту: "Method PUT is not allowed",
+        т.к. мы не будем знать, что надо поменять.
+        Далее мы попробуем взять указанную запись из модели Women по ключу pk,
+        но если мы по каким-то причинам не можем взять выбранную запись,то мы возвратим ответ
+        клиенту, что объект не найден - "Object doesn't exist".
+        А если все прошло успешно, т.е. мы получили и ключ и запись по этому ключу,
+        то соответственно создаем объект-сериализатор с помощью класса WomenSerializer,
+        в качестве аргументов мы ему передадим request.data - потому что это как раз те данные,
+        которые мы хотим изменить, и объект instance - это объект, конкретно который мы будем менять,
+        т.е. ту запись ,которую мы собираемся поменять. Затем в этом объекте serializer мы должны проверить
+        принятые данные с помощью is_valid и сохраняем его c помощью save(), причем метод save() автоматически вызовет
+        метод update() из сериализатора (потому что когда мы создаем объект-сериализатор, мы указываем 2 параметра:
+        (data и instance), поэтому вызывается метод update ,а не get(указывается для этого только data))
+        А в самом конце, после того, как мы изменим запись, мы отправим клиенту запрос в виде
+        JSON-строки : {"post":serializer.data}, где serializer.data - данные, которые были изменены.'''
+
+        pk=kwargs.get('pk',None)
+        if not pk:
+            return Response({'Error':'Method PUT is not allowed'})
+        try:
+            instance=Women.objects.get(pk=pk)
+        except:
+            return Response({'Error':"Object doesn't exist"})
+
+        serializer=WomenSerializer(data=request.data, instance=instance)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({'post':serializer.data})
+
+    def delete(self,request,*args,**kwargs):
+        '''Метод для удаления записей из таблицы БД'''
+        # определяем ключ записи, по которму будем удалять запись
+        pk=kwargs.get('pk',None)
+        if not pk:
+            Response({'Error':'Method delete is not allowed'})
+        try:
+            instance=Women.objects.get(pk=pk).delete()
+        except:
+            return Response({'Error': "Object doesn't exist"})
+
+        return Response({'post':'delete post'+str(pk)})
 
 class CategoryAPIView(APIView):
     def get(self,request):
@@ -65,10 +107,40 @@ class CategoryAPIView(APIView):
         return Response({'categories':CategorySerializer(all_categories, many=True).data})
 
     def post(self, request):
-        new_category=Category.objects.create(
-            name=request.data['name']
-        )
-        return Response({'category':CategorySerializer(new_category).data})
+        #проверка:
+        serializer=CategorySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        #если все нормально, создаем post-запрос:
+
+        return Response({'category':serializer.data})
+
+    def put(self,request,*args,**kwargs):
+        pk=kwargs.get('pk',None)
+        if not pk:
+            return Response({'Error':'Method PUT is not allowed'})
+        try:
+            instance=Category.objects.get(pk=pk)
+        except:
+            return Response({'Error':"Object doesn't exist"})
+
+        serializer=CategorySerializer(data=request.data, instance=instance)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({'category': serializer.data})
+
+    def delete(self,request,*args,**kwargs):
+        pk=kwargs.get('pk',None)
+        if not pk:
+            return Response({'Error':'Method delete is not allowed'})
+        try:
+            instance=Category.objects.get(pk=pk).delete()
+        except:
+            return Response({'Error': "Object doesn't exist"})
+
+        return Response({'category':'delete category'+str(pk)})
+
 
 # class WomenAPIView(generics.ListAPIView):
 #     '''1) Определим атрибут queryset, который из таблицы Women

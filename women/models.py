@@ -14,6 +14,7 @@ class Women(models.Model):
     def __str__(self):
         return self.title
 
+
 class Category(models.Model):
     '''Модель определяет что это за категория знаменитых женщин:
     актриса, певица или спортсменка'''
@@ -21,3 +22,22 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class VolleyballTeams(models.Model):
+    team_name=models.CharField(max_length=25)
+    players=models.CharField(max_length=50)
+    rank=models.CharField(max_length=3)
+    city=models.CharField(max_length=25)
+    cat_players=models.ForeignKey('PlayersCategory',on_delete=models.PROTECT,null=True)
+
+    def __str__(self):
+        return self.team_name
+
+class PlayersCategory(models.Model):
+    name=models.CharField(max_length=100, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+

@@ -4,7 +4,8 @@ from rest_framework import serializers
 from rest_framework.parsers import JSONParser
 from rest_framework.renderers import JSONRenderer
 
-from .models import Women, Category
+from .models import Women, Category, VolleyballTeams, PlayersCategory
+
 
 #ПОКАЗАН ВЕСЬ ПРОЦЕСС КОДИРОВАНИЯ И ДЕКОДИРОВАНИЯ ДАННЫХ, КОТОРЫЕ ПРЕДСТАВЛЯЮТСЯ В ВИДЕ JSON-ФОРМАТА
 # class WomenModel:
@@ -18,7 +19,8 @@ from .models import Women, Category
 #         self.content=content
 
 class WomenSerializer(serializers.Serializer):
-    '''Данный класс будет наследоваться от базового класса Serializer,
+    '''ЭТОТ СЕРИАЛИЗАТОР ПРОПИСАН ВРУЧНУЮ!!! ТУТ ВИДНО КАК ВСЕ РАБОТАЕТ ПОД КАПОТОМ!
+    Данный класс будет наследоваться от базового класса Serializer,
     и в нем надо вручную прописать весь функционал по преобразованию
     объектов класса WomenModel в JSON-формат.
      !!!!ВАЖНО!!!
@@ -73,6 +75,18 @@ class CategorySerializer(serializers.Serializer):
         instance.name=validated_data.get('name',instance.name)
         instance.save()
         return instance
+
+
+class TeamsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=VolleyballTeams
+        fields=('team_name','players','rank','city','cat_players')
+
+class PlayersCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model=PlayersCategory
+        fields=('name',)
+
 
 
 # def encode():

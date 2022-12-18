@@ -4,8 +4,8 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Women, Category
-from .serializers import WomenSerializer, CategorySerializer
+from .models import Women, Category, VolleyballTeams, PlayersCategory
+from .serializers import WomenSerializer, CategorySerializer, TeamsSerializer, PlayersCategorySerializer
 
 
 class WomenAPIView(APIView):
@@ -140,6 +140,22 @@ class CategoryAPIView(APIView):
             return Response({'Error': "Object doesn't exist"})
 
         return Response({'category':'delete category'+str(pk)})
+
+
+class TeamsAPIList(generics.ListCreateAPIView):
+    '''ListCreateAPIView -  с помощью этого класса можно читать данные из БД по get-запросу,
+    а так же добавлять новые по post-запросу. Внутри нашего класса мы должны определить 2 атрибута:
+    queryset - будет ссылаться на список записей, возвращаемых клиенту,
+    serializer_class - сериализатор, который мы будем применять.
+    '''
+    queryset = VolleyballTeams.objects.all()
+    serializer_class = TeamsSerializer
+
+
+
+class CategoryTeamsAPIList(generics.ListCreateAPIView):
+    queryset = PlayersCategory.objects.all()
+    serializer_class = PlayersCategorySerializer
 
 
 # class WomenAPIView(generics.ListAPIView):

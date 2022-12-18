@@ -16,11 +16,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from women.views import WomenAPIView, CategoryAPIView
+from women.views import WomenAPIView, CategoryAPIView, TeamsAPIList, CategoryTeamsAPIList
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/womenlist/',WomenAPIView.as_view()),
     path('api/v1/womenlist/<int:pk>/',WomenAPIView.as_view()), #дополнительно передаем ключ pk(идентификатор записи, которую собираемся поменять)
     path('api/v1/categorylist/',CategoryAPIView.as_view()),
+    path('api/v1/teamslist/',TeamsAPIList.as_view()),
+    path('api/v1/teamslist/<int:pk>/',TeamsAPIList.as_view()),
+    path('api/v1/teamscategorylist/',CategoryTeamsAPIList.as_view()),
+
 ]

@@ -14,10 +14,18 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
-from women.views import WomenAPIView, CategoryAPIView, TeamsAPIList, CategoryTeamsAPIList, TeamsAPIUpdate, \
-    TeamsAPIDetailView
+from rest_framework import routers
+
+from women.views import WomenAPIView, CategoryAPIView, TeamsAPIList, TeamsAPIUpdate,TeamsAPIDetailView, PlayersCategoryViewSet
+
+#создание объекта-роутера:
+router=routers.SimpleRouter()
+#далее в этом объекте нужно зарегестрировать класс ViewSet
+router.register(r'players_category', PlayersCategoryViewSet)
+
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -27,6 +35,12 @@ urlpatterns = [
     path('api/v1/teamslist/',TeamsAPIList.as_view()),
     path('api/v1/teamslist/<int:pk>/',TeamsAPIUpdate.as_view()),
     path('api/v1/teamsdetail/<int:pk>/', TeamsAPIDetailView.as_view()),
-    path('api/v1/teamscategorylist/',CategoryTeamsAPIList.as_view()),
+    #path('api/v1/teamscategorylist/',PlayersCategoryViewSet.as_view({'get':'list'})), #для получения списка записей из БД
+    #path('api/v1/teamscategorylist/<int:pk>/',PlayersCategoryViewSet.as_view({'put':'update'})), #для изменения записи в БД
+    #вместо этих двух маршрутов мы пропишем весь набор маршрутов, которые были автоматически сгенерированн роутером
+    path('api/v1/',include(router.urls)) #маршрут будет включать префикс http://127.0.0.1:8000/api/v1/players_category/ - отвечает за чтение и добавление новой записи в БД
+    #а если добавляем ключ в конце - http://127.0.0.1:8000/api/v1/players_category/2/ - мы можем прочитать ,изменить запись или удалить запись
+
+
 
 ]

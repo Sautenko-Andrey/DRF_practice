@@ -1,5 +1,5 @@
 from django.forms import model_to_dict
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -177,8 +177,28 @@ class TeamsAPIDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TeamsSerializer
 
 
+#Далее у этих представлений идет дублирование кода. Это не хорошо в больших проектах.
+# как это исправить? показано после этих представлений. Мы их закомментируем
+# class CategoryTeamsAPIList(generics.ListCreateAPIView):
+#     queryset = PlayersCategory.objects.all()
+#     serializer_class = PlayersCategorySerializer
+#
+# class CategoryTeamsAPIUpdate(generics.UpdateAPIView):
+#     queryset = PlayersCategory.objects.all()
+#     serializer_class = PlayersCategorySerializer
+#
+# class CategoryTeamsAPIDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = PlayersCategory.objects.all()
+#     serializer_class = PlayersCategorySerializer
 
-class CategoryTeamsAPIList(generics.ListCreateAPIView):
+#ВОТ КАК НАДО СДЕЛАТЬ , ЧТОБЫ НЕ БЫЛО ДУБЛИРОВАНИЯ КОДА! ЭТО ДОСТИГАЕТСЯ ЗАСЧЕТ ВЬЮСЕТОВ!
+# ВОСПОЛЬЗУЕМСЯ КЛАССОМ ModelViewSet, потому что мы работаем с моделью PlayersCategory
+# Все три вышенаписанных класса мы модифицируем:
+class PlayersCategoryViewSet(viewsets.ModelViewSet):
+    '''В первую очередь этим классом мы уберем три вышеперечисленных класса,
+    т.е. избавимся от дублирования кода.
+    Определим те же 2 атрибута: queryset и serializer_class'''
+
     queryset = PlayersCategory.objects.all()
     serializer_class = PlayersCategorySerializer
 

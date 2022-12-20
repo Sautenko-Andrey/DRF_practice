@@ -151,6 +151,31 @@ class TeamsAPIList(generics.ListCreateAPIView):
     queryset = VolleyballTeams.objects.all()
     serializer_class = TeamsSerializer
 
+class TeamsAPIUpdate(generics.UpdateAPIView):
+    '''UpdateAPIView - класс для изменения данных в БД.
+    Внутри определяются два атрибута:
+    queryset - будет получать набор всех данных из таблицы VolleyballTeams.
+    serializer_class - указываем класс сериализатора. Используется абсолютно
+    тотже класс сериализатора, потому что мы по-прежнему работаем с моделью VolleyballTeams.
+    Здесь будет отправляться клиенту только одна измененная запись из таблицы, а не вся таблица,
+    потому что в Django queryset = VolleyballTeams.objects.all() - это ленивый запрос, и мы просто
+    связываем queryset  с нужной нам табл. БД. А далее базовый класс UpdateAPIView уже сам
+    обработает атрибут queryset и возвратит клиенту только одну измененную запись.
+    '''
+
+    queryset = VolleyballTeams.objects.all()
+    serializer_class = TeamsSerializer
+
+class TeamsAPIDetailView(generics.RetrieveUpdateDestroyAPIView):
+    '''базовый класс RetrieveUpdateDestroyAPIView позволяет читать, изменять и добавлять
+    записи в БД, а так же удалять.
+    Прописываем 2 атрибута:
+    queryset и serializer_class. Сериализатор будет абсолютно тот же самый,
+    т.к. мы работаем с той же моделью из БД.'''
+
+    queryset = VolleyballTeams.objects.all()
+    serializer_class = TeamsSerializer
+
 
 
 class CategoryTeamsAPIList(generics.ListCreateAPIView):

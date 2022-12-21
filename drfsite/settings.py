@@ -125,8 +125,15 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK={
+
+
     'DEFAULT_RENDERER_CLASSES':[
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  #отключение браузерной формы API, где мы можем делать определенные действия
+    ],
+
+#глобальное ограничение доступа для всех url разрабатываемого API в рамках DRF. т.е. это будет поведение по умолчанию, если поменяем AllowAny на другое
+    'DEFAULT_PERMISSION_CLASSES':[
+        'rest_framework.permissions.AllowAny', # IsAuthenticated - доступ к данным будет предоставлен только авторизованным пользователям
     ]
 }

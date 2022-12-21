@@ -2,105 +2,133 @@ from django.forms import model_to_dict
 from rest_framework import generics, viewsets
 from django.shortcuts import render
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Women, Category, VolleyballTeams, PlayersCategory
+from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import WomenSerializer, CategorySerializer, TeamsSerializer, PlayersCategorySerializer
 
+# тут будет показана работа ограничений (permissions).Для этого определим три простых представления
+class WomenAPIList(generics.ListCreateAPIView):
+    queryset = Women.objects.all()
+    serializer_class = WomenSerializer
+    #сделаем так, чтобы добавлять записи могли только авторизованные пользователи,
+    # а все остальные только читать
+    permission_classes = (IsAuthenticatedOrReadOnly,)
 
-class WomenAPIView(APIView):
-    '''APIView - базовый класс представлений.
-    Здесь приведен пример как на базовом уровне происходит обработка запросов
-    в представлении DRF. Класс APIView как раз и выполняет эту работу:
-    он связывает пришедший запрос с соответствующим методом (get,put,delete и т.д),
-    а метод прописывается уже самостоятельно вручную.'''
-    def get(self, request):
-        '''Метод, отвечающий за обработку API-запросов,
-        т.е. когда на вход серверу будут поступать get-запросы,
-        то автоматически будет вызываться этот метод.
-        Аргумент request содержит все параметры входящего get-запроса.
-        Класс Response - возвращает клиенту, который сделал get-запрос,
-        JSON-строку. JSON-строка будет формироваться следующим образом:
-        мы на уровне python-программы прописываем словарь и этот словарь
-        автоматически будет преобразован в JSON-строку.
-        Т.е. класс Response() преобразовывает словарь в соответствующую JSON-строку.
-        По данному get-запросу мы будем отправлять список всех записей из БД Women'''
+class WomenAPIUpdate(generics.RetrieveUpdateAPIView):
+    queryset = Women.objects.all()
+    serializer_class = WomenSerializer
+    #разрешим в нем менять записи только автору,а просматривать могут все пользователи
+    #нам тоже понадобится собственный класс в permission
+    #мы его скопируем прям из фоициально документации DRF
+    permission_classes = (IsOwnerOrReadOnly,)
 
-        #для начала получим список всех записей Women из БД:
-        pages_list=Women.objects.all()
-        #вернем список всех записей из таблицы Women и т.к. здесь будет использоваться список записей,
-        # а не одна какая-то запись,то дополнительно указываем many=True,чтобы он вернул список записей
-        #data - это словарь преобразованных данных из таблицы Women
-        #объект Response уже в свою очередь все преобразовывает в байтовую JSON-строку
-        #здесь выполняется все действия из ф-ии encode, которую мы прописывали в ручную в serializers
-        return Response({'posts': WomenSerializer(pages_list, many=True).data})
 
-    def post(self, request):
-        '''Метод, отвечающий за post-запросы.
-        Т.е. он позволяет нам добавлять новые записи в БД.'''
 
-        #прежде чем добавлять новую запись в БД мы сделаем проверку:
-        #сначала мы создадим сериализатор на основе тех данных, которые поступили с post-запросом:
-        serializer=WomenSerializer(data=request.data)
+class WomenAPIDestroy(generics.RetrieveDestroyAPIView):
+    queryset = Women.objects.all()
+    serializer_class = WomenSerializer
+    # сделаем так, что удалять записи может только администратор
+    # нам тоже понадобится собственный класс в permission
+    permission_classes = (IsAdminOrReadOnly,)  # тут был изначально класс IsAdminUser()из-за этой строчки по этому запросу пользователи не смогут просматривать данные
+    # чтобы просматривать могли все,но удалять только администратор: мы поменяли класс IsAdminUser на наш кастомный IsAdminOrReadOnly
 
-        #далее с помощью метода is_valid мы проверяем корректность принятых данных:
-        serializer.is_valid(raise_exception=True)
-        #метод save() автоматически вызовет метод create()в сериализаторе и добавит новую запись в БД
-        serializer.save()
 
-        #в качестве ответа клиенту мы будем отправлять обратно значение,данное этой новой добавленной записи,
-        #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - сериализатор WomenSerializer
-        return Response({'post':serializer.data})
-
-    def put(self,request,*args,**kwargs):
-        '''С помощью коллекции kwargs мы можем определить значение pk -
-        идентификатор записи, которую нужно поменять. Как это делается? Мы обращаемся
-        к словарю kwargs, берем у него ключ pk(если он там присутствует), а если не
-        присутствует, то мы возвртим значение None.
-        Далее сделаем проверку, что если этот ключ pk не присутствует в этой коллекции kwargs
-        (т.е. этот ключ не указан в url-запросе), то мы возвратим ответ клиенту: "Method PUT is not allowed",
-        т.к. мы не будем знать, что надо поменять.
-        Далее мы попробуем взять указанную запись из модели Women по ключу pk,
-        но если мы по каким-то причинам не можем взять выбранную запись,то мы возвратим ответ
-        клиенту, что объект не найден - "Object doesn't exist".
-        А если все прошло успешно, т.е. мы получили и ключ и запись по этому ключу,
-        то соответственно создаем объект-сериализатор с помощью класса WomenSerializer,
-        в качестве аргументов мы ему передадим request.data - потому что это как раз те данные,
-        которые мы хотим изменить, и объект instance - это объект, конкретно который мы будем менять,
-        т.е. ту запись ,которую мы собираемся поменять. Затем в этом объекте serializer мы должны проверить
-        принятые данные с помощью is_valid и сохраняем его c помощью save(), причем метод save() автоматически вызовет
-        метод update() из сериализатора (потому что когда мы создаем объект-сериализатор, мы указываем 2 параметра:
-        (data и instance), поэтому вызывается метод update ,а не get(указывается для этого только data))
-        А в самом конце, после того, как мы изменим запись, мы отправим клиенту запрос в виде
-        JSON-строки : {"post":serializer.data}, где serializer.data - данные, которые были изменены.'''
-
-        pk=kwargs.get('pk',None)
-        if not pk:
-            return Response({'Error':'Method PUT is not allowed'})
-        try:
-            instance=Women.objects.get(pk=pk)
-        except:
-            return Response({'Error':"Object doesn't exist"})
-
-        serializer=WomenSerializer(data=request.data, instance=instance)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({'post':serializer.data})
-
-    def delete(self,request,*args,**kwargs):
-        '''Метод для удаления записей из таблицы БД'''
-        # определяем ключ записи, по которму будем удалять запись
-        pk=kwargs.get('pk',None)
-        if not pk:
-            Response({'Error':'Method delete is not allowed'})
-        try:
-            instance=Women.objects.get(pk=pk).delete()
-        except:
-            return Response({'Error': "Object doesn't exist"})
-
-        return Response({'post':'delete post'+str(pk)})
+# class WomenAPIView(APIView):
+#     '''APIView - базовый класс представлений.
+#     Здесь приведен пример как на базовом уровне происходит обработка запросов
+#     в представлении DRF. Класс APIView как раз и выполняет эту работу:
+#     он связывает пришедший запрос с соответствующим методом (get,put,delete и т.д),
+#     а метод прописывается уже самостоятельно вручную.'''
+#     def get(self, request):
+#         '''Метод, отвечающий за обработку API-запросов,
+#         т.е. когда на вход серверу будут поступать get-запросы,
+#         то автоматически будет вызываться этот метод.
+#         Аргумент request содержит все параметры входящего get-запроса.
+#         Класс Response - возвращает клиенту, который сделал get-запрос,
+#         JSON-строку. JSON-строка будет формироваться следующим образом:
+#         мы на уровне python-программы прописываем словарь и этот словарь
+#         автоматически будет преобразован в JSON-строку.
+#         Т.е. класс Response() преобразовывает словарь в соответствующую JSON-строку.
+#         По данному get-запросу мы будем отправлять список всех записей из БД Women'''
+#
+#         #для начала получим список всех записей Women из БД:
+#         pages_list=Women.objects.all()
+#         #вернем список всех записей из таблицы Women и т.к. здесь будет использоваться список записей,
+#         # а не одна какая-то запись,то дополнительно указываем many=True,чтобы он вернул список записей
+#         #data - это словарь преобразованных данных из таблицы Women
+#         #объект Response уже в свою очередь все преобразовывает в байтовую JSON-строку
+#         #здесь выполняется все действия из ф-ии encode, которую мы прописывали в ручную в serializers
+#         return Response({'posts': WomenSerializer(pages_list, many=True).data})
+#
+#     def post(self, request):
+#         '''Метод, отвечающий за post-запросы.
+#         Т.е. он позволяет нам добавлять новые записи в БД.'''
+#
+#         #прежде чем добавлять новую запись в БД мы сделаем проверку:
+#         #сначала мы создадим сериализатор на основе тех данных, которые поступили с post-запросом:
+#         serializer=WomenSerializer(data=request.data)
+#
+#         #далее с помощью метода is_valid мы проверяем корректность принятых данных:
+#         serializer.is_valid(raise_exception=True)
+#         #метод save() автоматически вызовет метод create()в сериализаторе и добавит новую запись в БД
+#         serializer.save()
+#
+#         #в качестве ответа клиенту мы будем отправлять обратно значение,данное этой новой добавленной записи,
+#         #т.е. мы будем знать что именно мы добавили в БД. Ключ будет 'post', а значение - сериализатор WomenSerializer
+#         return Response({'post':serializer.data})
+#
+#     def put(self,request,*args,**kwargs):
+#         '''С помощью коллекции kwargs мы можем определить значение pk -
+#         идентификатор записи, которую нужно поменять. Как это делается? Мы обращаемся
+#         к словарю kwargs, берем у него ключ pk(если он там присутствует), а если не
+#         присутствует, то мы возвртим значение None.
+#         Далее сделаем проверку, что если этот ключ pk не присутствует в этой коллекции kwargs
+#         (т.е. этот ключ не указан в url-запросе), то мы возвратим ответ клиенту: "Method PUT is not allowed",
+#         т.к. мы не будем знать, что надо поменять.
+#         Далее мы попробуем взять указанную запись из модели Women по ключу pk,
+#         но если мы по каким-то причинам не можем взять выбранную запись,то мы возвратим ответ
+#         клиенту, что объект не найден - "Object doesn't exist".
+#         А если все прошло успешно, т.е. мы получили и ключ и запись по этому ключу,
+#         то соответственно создаем объект-сериализатор с помощью класса WomenSerializer,
+#         в качестве аргументов мы ему передадим request.data - потому что это как раз те данные,
+#         которые мы хотим изменить, и объект instance - это объект, конкретно который мы будем менять,
+#         т.е. ту запись ,которую мы собираемся поменять. Затем в этом объекте serializer мы должны проверить
+#         принятые данные с помощью is_valid и сохраняем его c помощью save(), причем метод save() автоматически вызовет
+#         метод update() из сериализатора (потому что когда мы создаем объект-сериализатор, мы указываем 2 параметра:
+#         (data и instance), поэтому вызывается метод update ,а не get(указывается для этого только data))
+#         А в самом конце, после того, как мы изменим запись, мы отправим клиенту запрос в виде
+#         JSON-строки : {"post":serializer.data}, где serializer.data - данные, которые были изменены.'''
+#
+#         pk=kwargs.get('pk',None)
+#         if not pk:
+#             return Response({'Error':'Method PUT is not allowed'})
+#         try:
+#             instance=Women.objects.get(pk=pk)
+#         except:
+#             return Response({'Error':"Object doesn't exist"})
+#
+#         serializer=WomenSerializer(data=request.data, instance=instance)
+#         serializer.is_valid(raise_exception=True)
+#         serializer.save()
+#
+#         return Response({'post':serializer.data})
+#
+#     def delete(self,request,*args,**kwargs):
+#         '''Метод для удаления записей из таблицы БД'''
+#         # определяем ключ записи, по которму будем удалять запись
+#         pk=kwargs.get('pk',None)
+#         if not pk:
+#             Response({'Error':'Method delete is not allowed'})
+#         try:
+#             instance=Women.objects.get(pk=pk).delete()
+#         except:
+#             return Response({'Error': "Object doesn't exist"})
+#
+#         return Response({'post':'delete post'+str(pk)})
 
 class CategoryAPIView(APIView):
     def get(self,request):

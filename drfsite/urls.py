@@ -18,8 +18,7 @@ from django.urls import path, include
 
 from rest_framework import routers
 
-from women.views import WomenAPIView, CategoryAPIView, TeamsAPIList, TeamsAPIUpdate,TeamsAPIDetailView, PlayersCategoryViewSet
-
+from women.views import *
 #создание объекта-роутера:
 router=routers.DefaultRouter()
 #далее в этом объекте нужно зарегестрировать класс ViewSet
@@ -68,8 +67,11 @@ class MyCustomRouter(routers.SimpleRouter):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/v1/womenlist/',WomenAPIView.as_view()),
-    path('api/v1/womenlist/<int:pk>/',WomenAPIView.as_view()), #дополнительно передаем ключ pk(идентификатор записи, которую собираемся поменять)
+    #path('api/v1/womenlist/',WomenAPIView.as_view()),
+    #path('api/v1/womenlist/<int:pk>/',WomenAPIView.as_view()), #дополнительно передаем ключ pk(идентификатор записи, которую собираемся поменять)
+    path('api/v1/women/',WomenAPIList.as_view()),
+    path('api/v1/women/<int:pk>/',WomenAPIUpdate.as_view()),
+    path('api/v1/womendelete/<int:pk>/',WomenAPIDestroy.as_view()),
     path('api/v1/categorylist/',CategoryAPIView.as_view()),
     path('api/v1/teamslist/',TeamsAPIList.as_view()),
     path('api/v1/teamslist/<int:pk>/',TeamsAPIUpdate.as_view()),

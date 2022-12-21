@@ -18,51 +18,59 @@ from .models import Women, Category, VolleyballTeams, PlayersCategory
 #         self.title=title
 #         self.content=content
 
-class WomenSerializer(serializers.Serializer):
-    '''ЭТОТ СЕРИАЛИЗАТОР ПРОПИСАН ВРУЧНУЮ!!! ТУТ ВИДНО КАК ВСЕ РАБОТАЕТ ПОД КАПОТОМ!
-    Данный класс будет наследоваться от базового класса Serializer,
-    и в нем надо вручную прописать весь функционал по преобразованию
-    объектов класса WomenModel в JSON-формат.
-     !!!!ВАЖНО!!!
-     В сериализаторе мы прописываем атрибуты абсолютно с теми же самыми именами,
-     что и локальные свойства, которые присутствуют в объектах класса WomenModel'''
+# class WomenSerializer(serializers.Serializer):
+#     '''ЭТОТ СЕРИАЛИЗАТОР ПРОПИСАН ВРУЧНУЮ!!! ТУТ ВИДНО КАК ВСЕ РАБОТАЕТ ПОД КАПОТОМ!
+#     Данный класс будет наследоваться от базового класса Serializer,
+#     и в нем надо вручную прописать весь функционал по преобразованию
+#     объектов класса WomenModel в JSON-формат.
+#      !!!!ВАЖНО!!!
+#      В сериализаторе мы прописываем атрибуты абсолютно с теми же самыми именами,
+#      что и локальные свойства, которые присутствуют в объектах класса WomenModel'''
+#
+#     #определим все атрибуты класса Women:
+#     title = serializers.CharField(max_length=255)
+#     content = serializers.CharField()
+#     time_create = serializers.DateTimeField(read_only=True) #только для чтения
+#     time_update = serializers.DateTimeField(read_only=True) #только для чтения
+#     is_published = serializers.BooleanField(default=True)
+#     cat_id = serializers.IntegerField()
+#
+#     def create(self, validated_data):
+#         '''Метод для добаавления/создания записи в таблице БД.
+#         Словарь validated_data будет состоять из всех проверенных данных,
+#         которые пришли с post-запроса.Т.е. когда мы во views.WomenAPIView при post-запросе
+#          в post()вызываем метод is_valid у нас формируется словарь validated_data.'''
+#         return Women.objects.create(**validated_data)
+#
+#     def update(self, instance, validated_data):
+#         '''Метод,позволяющий менять уже существующую запись в БД.
+#         instance-это ссылка на объект модели Women,
+#         validated_data-это словарь из проверенных данных,
+#         которые нужно изменить в БД.
+#         Как это работает? Т.к. instance - это объект модели Women, то
+#         мы можем длеать это через ORM-Django'''
+#
+#         #присваиваем полю title значение из коллекции validated_data по ключу 'title',
+#         # а иначе, если по каким-то причинам нельзя взять ключ "title" из словаря,
+#         #то мы возвратим title, который уже есть у модели Women.И так пропишем для всех полей,
+#         #которые у нас присутствуют в модели.
+#         instance.title=validated_data.get('title', instance.title)
+#         instance.content=validated_data.get('content',instance.content)
+#         instance.time_update=validated_data.get('time_update',instance.time_update)
+#         instance.is_published=validated_data.get('is_published',instance.is_published)
+#         instance.cat_id=validated_data.get('cat_id',instance.cat_id)
+#         #сохраняем изменения в БД
+#         instance.save()
+#         #возвращаем объект instance
+#         return instance
 
-    #определим все атрибуты класса Women:
-    title = serializers.CharField(max_length=255)
-    content = serializers.CharField()
-    time_create = serializers.DateTimeField(read_only=True) #только для чтения
-    time_update = serializers.DateTimeField(read_only=True) #только для чтения
-    is_published = serializers.BooleanField(default=True)
-    cat_id = serializers.IntegerField()
-
-    def create(self, validated_data):
-        '''Метод для добаавления/создания записи в таблице БД.
-        Словарь validated_data будет состоять из всех проверенных данных,
-        которые пришли с post-запроса.Т.е. когда мы во views.WomenAPIView при post-запросе
-         в post()вызываем метод is_valid у нас формируется словарь validated_data.'''
-        return Women.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        '''Метод,позволяющий менять уже существующую запись в БД.
-        instance-это ссылка на объект модели Women,
-        validated_data-это словарь из проверенных данных,
-        которые нужно изменить в БД.
-        Как это работает? Т.к. instance - это объект модели Women, то
-        мы можем длеать это через ORM-Django'''
-
-        #присваиваем полю title значение из коллекции validated_data по ключу 'title',
-        # а иначе, если по каким-то причинам нельзя взять ключ "title" из словаря,
-        #то мы возвратим title, который уже есть у модели Women.И так пропишем для всех полей,
-        #которые у нас присутствуют в модели.
-        instance.title=validated_data.get('title', instance.title)
-        instance.content=validated_data.get('content',instance.content)
-        instance.time_update=validated_data.get('time_update',instance.time_update)
-        instance.is_published=validated_data.get('is_published',instance.is_published)
-        instance.cat_id=validated_data.get('cat_id',instance.cat_id)
-        #сохраняем изменения в БД
-        instance.save()
-        #возвращаем объект instance
-        return instance
+class WomenSerializer(serializers.ModelSerializer):
+    #создается скрытое поле и в этом поле прописывается текущий пользователь,
+    #чтобы  при добавлении статьи она автоматически была связана с текущим пользователем
+    user=serializers.HiddenField(default=serializers.CurrentUserDefault())
+    class Meta:
+        model=Women
+        fields='__all__'
 
 
 class CategorySerializer(serializers.Serializer):

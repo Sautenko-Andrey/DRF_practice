@@ -1,6 +1,7 @@
 from django.forms import model_to_dict
 from rest_framework import generics, viewsets
 from django.shortcuts import render
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -199,8 +200,40 @@ class PlayersCategoryViewSet(viewsets.ModelViewSet):
     т.е. избавимся от дублирования кода.
     Определим те же 2 атрибута: queryset и serializer_class'''
 
-    queryset = PlayersCategory.objects.all()
+    #queryset = PlayersCategory.objects.all() -закомментил, потому что ниже мы переопределяем метод get_queryset
     serializer_class = PlayersCategorySerializer
+
+    #предположим, что мы бы хотели возвращать клиенту не все записи из БД посредством all(),
+    # а тлько первые 3 (из 5). Для этого мы можем переопределить метод get_queryset, который
+    # возвращает список определенных данных
+    def get_queryset(self):
+        # при get-запросе на одну запись во избежании получения ошибок нужно:
+        #получим ключ pk:
+        pk=self.kwargs.get('pk')
+        if not pk:
+        #далее проверим, существует ли этот ключ.Если он не существует,то мы возвращаем первые 3 записи
+            #возвратим первые 3 записи
+            return PlayersCategory.objects.all()[:3]
+        #а иначе возвратим одну конкрутную запись, как нам и нужно:
+        return PlayersCategory.objects.filter(pk=pk)
+
+
+
+    # предположим, что мы хотим с помощью этого вьюсета так же еще выводить список игроков
+    # для этого  прописываем декоратор @action и в нем в качестве параметров указываем поддерживаемые
+    #методы methods(в данном примере пусть будет метод get, для чтения игроков), и так же определим
+    # еще один парметр detail=False - т.е. у нас будет возвращаться именно список игроков, а вот если бы
+    # было detail=True, то возвращалась бы одна какая-то запись (мы указывали в запросе ее идентификационный номер)
+    @action(methods=['get'],detail=True)
+    #далее пропишем метод, который придумыаем сами, но собязательным параметром request:
+    def players(self,request,pk=None):  #чтобы чиатть определенную запись здесь в параметрах метода нужно прописать pk=1,2,3...
+        #а сам метод должен возвращать определенный JSON-ответ:
+        # для этого мы прочитаем всех игроков, которые у нас есть из модели VolleyballTeams:
+        teams=VolleyballTeams.objects.all() #для чтения конкретной записи вместо all() прописать get(pk=pk
+        #далее возвратим JSON-ответ:
+        #т.е. мы перебераем коллекцию teams и берем соответствующие названия команд из модели VolleyballTeams team_name
+        return Response({'teams':[t.team_name for t in teams]}) #для чтения конкретной записи будет вместо списка - teams.team_name
+        # таким образом мы добавили новый маршрут в этот вьюсет
 
 
 # class WomenAPIView(generics.ListAPIView):

@@ -21,9 +21,48 @@ from rest_framework import routers
 from women.views import WomenAPIView, CategoryAPIView, TeamsAPIList, TeamsAPIUpdate,TeamsAPIDetailView, PlayersCategoryViewSet
 
 #создание объекта-роутера:
-router=routers.SimpleRouter()
+router=routers.DefaultRouter()
 #далее в этом объекте нужно зарегестрировать класс ViewSet
-router.register(r'players_category', PlayersCategoryViewSet)
+router.register(r'players_category', PlayersCategoryViewSet, basename='players_category') #добавил basename,т.к. мы закоментили queryset  в вьюсете,если queryset есть, то basename прописывать не нужно
+print(router.urls)
+
+# !!! в качестве примера будет показано, как писать свои собственные роутеры (требуется редко,но знать нужно о таком)
+class MyCustomRouter(routers.SimpleRouter):
+    '''Данный класс был взят из оф.документации и немного кастомизирован.
+    Мы наследуемся от класса SimpleRouter, как наиболее простого класса роутеров.
+    А затем внутри нашего класса определяем специальный атрибут routes - т.е.
+    это список наших маршрутов. каждый элемент этого списка представляется объектом класса Route.
+    Каждый класс определяет один отдельный маршрут, и в каждрм классе прописываются парметры:
+    1)url - это шаблон маршрута;
+    2)mapping - связывает тип запроса с соответствующим методом вьюсета;
+    3)name - определяет название маршрута;
+    4)detail - определяет: это будет список или отдельная запись;
+    5)initkwargs - это доп.аргументы , которые передаются конкретному определению при срабатывании маршрута
+    В результате в данном кастомизированном роутере определено 2 маршрута
+    '''
+
+    routes=[
+        #первый маршрут читает список статей
+        routers.Route(
+            url=r'^{prefix}$',
+            mapping={'get':'list'},
+            name='{basename}-list',
+            detail=False,
+            initkwargs={'suffix':'List'}
+        ),
+        # второй маршрут читает конкретную статью по ее идентификатору
+        routers.Route(
+            url=r'^{prefix}/{lookup}$',
+            mapping={'get': 'retrieve'},
+            name='{basename}-detail',
+            detail=True,
+            initkwargs={'suffix': 'Detail'}
+        )
+    ]
+
+#далее в router=routers.DefaultRouter() вместо DefaultRouter мы прописываем MyCustomRouter без routers.
+#router=MyCustomRouter()
+#router.register(r'players_category', PlayersCategoryViewSet, basename='players_category')
 
 
 

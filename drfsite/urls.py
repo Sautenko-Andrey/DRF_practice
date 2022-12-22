@@ -14,16 +14,17 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView,TokenVerifyView
 
 from women.views import *
 #создание объекта-роутера:
 router=routers.DefaultRouter()
 #далее в этом объекте нужно зарегестрировать класс ViewSet
 router.register(r'players_category', PlayersCategoryViewSet, basename='players_category') #добавил basename,т.к. мы закоментили queryset  в вьюсете,если queryset есть, то basename прописывать не нужно
-print(router.urls)
+# print(router.urls)
 
 # !!! в качестве примера будет показано, как писать свои собственные роутеры (требуется редко,но знать нужно о таком)
 class MyCustomRouter(routers.SimpleRouter):
@@ -67,21 +68,36 @@ class MyCustomRouter(routers.SimpleRouter):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    #пропишем маршрут, чтобы мы могли использовать авторизацию на основе сессий и кук.
+    #этот маршрут мы придумываем сами, к примеру он будет api/v1/drf-auth/
+    path('api/v1/drf-auth/',include('rest_framework.urls')), #теперь подключена авторизация на основе сессий
+
     #path('api/v1/womenlist/',WomenAPIView.as_view()),
     #path('api/v1/womenlist/<int:pk>/',WomenAPIView.as_view()), #дополнительно передаем ключ pk(идентификатор записи, которую собираемся поменять)
     path('api/v1/women/',WomenAPIList.as_view()),
     path('api/v1/women/<int:pk>/',WomenAPIUpdate.as_view()),
     path('api/v1/womendelete/<int:pk>/',WomenAPIDestroy.as_view()),
+
     path('api/v1/categorylist/',CategoryAPIView.as_view()),
+
     path('api/v1/teamslist/',TeamsAPIList.as_view()),
     path('api/v1/teamslist/<int:pk>/',TeamsAPIUpdate.as_view()),
     path('api/v1/teamsdetail/<int:pk>/', TeamsAPIDetailView.as_view()),
+
     #path('api/v1/teamscategorylist/',PlayersCategoryViewSet.as_view({'get':'list'})), #для получения списка записей из БД
     #path('api/v1/teamscategorylist/<int:pk>/',PlayersCategoryViewSet.as_view({'put':'update'})), #для изменения записи в БД
     #вместо этих двух маршрутов мы пропишем весь набор маршрутов, которые были автоматически сгенерированн роутером
-    path('api/v1/',include(router.urls)) #маршрут будет включать префикс http://127.0.0.1:8000/api/v1/players_category/ - отвечает за чтение и добавление новой записи в БД
+    path('api/v1/',include(router.urls)), #маршрут будет включать префикс http://127.0.0.1:8000/api/v1/players_category/ - отвечает за чтение и добавление новой записи в БД
     #а если добавляем ключ в конце - http://127.0.0.1:8000/api/v1/players_category/2/ - мы можем прочитать ,изменить запись или удалить запись
 
+    #подключение библиотеки djoser к нашему проекту.авторизация через простые токены
+    path('api/v1/auth/',include('djoser.urls')), #строка отвечающая за регистрацию,изменение,удаление пользователя
+    re_path(r'^auth/',include('djoser.urls.authtoken')), #строка, отвечающая за авторизацию по токенам
 
+    #маршруты для авторизации через JWT-токенов
+    path('api/v1/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), #для авторизации через JWT-токен
+    path('api/v1/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), #для обновления JWT-токена, когда его срок действия истек
+    path('api/v1/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
 
 ]

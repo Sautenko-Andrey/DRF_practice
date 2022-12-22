@@ -1,8 +1,9 @@
 from django.forms import model_to_dict
 from rest_framework import generics, viewsets
 from django.shortcuts import render
+from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -24,7 +25,20 @@ class WomenAPIUpdate(generics.RetrieveUpdateAPIView):
     #разрешим в нем менять записи только автору,а просматривать могут все пользователи
     #нам тоже понадобится собственный класс в permission
     #мы его скопируем прям из фоициально документации DRF
-    permission_classes = (IsOwnerOrReadOnly,)
+    #permission_classes = (IsOwnerOrReadOnly,)
+
+    #сделаем так, чтобы содержимое записи мог просматривать только авторизованный пользователь,
+    #прописав стандартный класс permission IsAuthenticated
+    permission_classes = (IsAuthenticated,)
+
+    #!!! на уровне каждого класса представлений
+    # мы можем конкретизировать способ аутенктификации пользователя!
+    # И сделать так, что это представление будет предоставлять доступ только тем пользователям,
+    # которые получают доступ именно по токенам, по сессиям мы уже не получим доступ!
+    # authentication_classes = (TokenAuthentication,)
+
+
+
 
 
 

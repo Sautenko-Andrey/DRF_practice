@@ -128,7 +128,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK={
 
-
     'DEFAULT_RENDERER_CLASSES':[
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',  #отключение браузерной формы API, где мы можем делать определенные действия
@@ -153,7 +152,11 @@ REST_FRAMEWORK={
         #разрешить аутентификацию через JWT-токены
         'rest_framework_simplejwt.authentication.JWTAuthentication'
 
-    )
+    ),
+        #определение класса по умолчанию для пагинации.Эти настройки глобальны для всего проекта,т.е. для абсолютно всех API-запросов
+        'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+        #определение количества записей на страницу
+        'PAGE_SIZE': 5
 }
 
 # настройки пакета SimpleJWT, для работы JWT-токенов, кот.будут использоваться в проекте(скоп. из оф.документации)

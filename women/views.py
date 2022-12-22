@@ -3,6 +3,7 @@ from rest_framework import generics, viewsets
 from django.shortcuts import render
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,6 +12,15 @@ from .models import Women, Category, VolleyballTeams, PlayersCategory
 from .permissions import IsAdminOrReadOnly, IsOwnerOrReadOnly
 from .serializers import WomenSerializer, CategorySerializer, TeamsSerializer, PlayersCategorySerializer
 
+
+#определим свой собственный класс пагинации, который будет работать конкретно с WomenAPIList,
+# а все остальные будут работать  с глобальными настройками пагинации в settings
+class WomenAPIListPagination(PageNumberPagination):
+    '''Класс для пагинации именно WomenAPIList'''
+    page_size = 3  #кол-во записей на страницу
+    page_query_param = 'page_size'  #'page_size' - доп.параметр в get-запросе, кот.мы можем прописывать в конце &page_size=4 - будет отображаться не 3, а 4 записи
+    max_page_size = 50  # мы можем менять 'page_size', но его значение не может быть больше указанного max_page_size
+
 # тут будет показана работа ограничений (permissions).Для этого определим три простых представления
 class WomenAPIList(generics.ListCreateAPIView):
     queryset = Women.objects.all()
@@ -18,6 +28,8 @@ class WomenAPIList(generics.ListCreateAPIView):
     #сделаем так, чтобы добавлять записи могли только авторизованные пользователи,
     # а все остальные только читать
     permission_classes = (IsAuthenticatedOrReadOnly,)
+    #указываем класс пагинации, который мы прописали собственоручно выше
+    pagination_class = WomenAPIListPagination
 
 class WomenAPIUpdate(generics.RetrieveUpdateAPIView):
     queryset = Women.objects.all()
